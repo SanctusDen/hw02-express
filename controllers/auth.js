@@ -10,7 +10,6 @@ const gravatar = require("gravatar");
 const path = require("path");
 const Jimp = require("jimp");
 const { nanoid } = require("nanoid");
-console.log(nanoid());
 
 const avatarsDir = path.join(__dirname, "../", "public", "avatars");
 
