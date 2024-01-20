@@ -3,31 +3,41 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const fs = require("fs/promises");
 const { User } = require("../models/user");
-const { TOKEN_KEY } = process.env;
+const { TOKEN_KEY, BASE_URL } = process.env;
 
-const { ctrlWrapper } = require("../helpers");
-const { HttpError } = require("../helpers");
+const { ctrlWrapper, HttpError, sendEmail } = require("../helpers");
 const gravatar = require("gravatar");
 const path = require("path");
 const Jimp = require("jimp");
+const nanoid = require("nanoid");
 
 const avatarsDir = path.join(__dirname, "../", "public", "avatars");
 
 const register = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
-  if (!user) {
+  if (user) {
     throw HttpError(409, "Email in use");
   }
 
   const hashPassword = await bcrypt.hash(password, 10);
   const avatarURL = gravatar.url(email);
+  const verificationToken = nanoid();
 
   const newUser = await User.create({
     ...req.body,
     password: hashPassword,
     avatarURL,
+    verificationToken,
   });
+
+  const verifyEmail = {
+    to: email,
+    subject: "Veriry Email",
+    html: `<a target="_blank" href="${BASE_URL}/api/verify/${verificationToken}">Click verify email</a>`,
+  };
+
+  await sendEmail(verifyEmail);
 
   res.status(201).json({
     email: newUser.email,
